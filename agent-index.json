@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "name": "cloudstream-ai-knowledge",
+    "version": "2.0",
+    "description": "Machine-readable quick reference for AI agents building Cloudstream extensions",
+    "updated": "2026-05-20",
+    "repo": "https://github.com/AiCurv/cloudstream-ai-knowledge"
+  },
+  "critical_versions": {
+    "kotlin": "2.3.0",
+    "gradle_plugin": "8.7.3",
+    "cloudstream_gradle": "com.github.recloudstream:gradle:-SNAPSHOT",
+    "cloudstream_stubs": "com.lagradost:cloudstream3:pre-release",
+    "jvm_target": "1.8",
+    "java_compat": "1.8",
+    "nicehttp": "com.github.Blatzar:NiceHttp:0.4.11",
+    "jsoup": "org.jsoup:jsoup:1.18.3",
+    "jackson": "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1",
+    "min_sdk": 21,
+    "compile_sdk": 35,
+    "target_sdk": 35
+  },
+  "errors_quick": {
+    "unresolved_Plugin": "Add apply(plugin=com.lagradost.cloudstream3.gradle) + cloudstream(pre-release stubs)",
+    "kotlin_version_mismatch": "Use kotlin-gradle-plugin:2.3.0 (pre-release stubs compiled with 2.3.0)",
+    "jvm_target_wrong": "Use JVM_1_8 not JVM_17",
+    "github_actions_403": "Add permissions:contents:write to workflow YAML",
+    "search_multi_word_empty": "Replace spaces with dashes in path-segment search URLs. URLEncoder + signs return 0 results on many sites",
+    "tvtypes_movies_not_nsfw": "Set tvTypes=listOf(\"NSFW\") in build.gradle.kts cloudstream block + supportedTypes=setOf(TvType.NSFW) in Provider",
+    "unsupported_escape_sequence": "Use Regex(\"\\\\s+\") not \"\\s+\".toRegex() in regular Kotlin strings",
+    "unresolved_addActors": "Use this.actors=listOf(...) not addActors() which doesn't exist in pre-release stubs",
+    "cloudflare_blocked": "Switch to non-Cloudflare site. No reliable bypass from extension code",
+    "bracket_selectors_corrupted": "Write files via Python not bash heredoc. [href gets eaten by shell",
+    "empty_mainpage": "Set hasMainPage=true + implement getMainPage() + use correct CSS selectors for the site",
+    "cached_old_extension": "User must uninstall old extension, remove repo, re-add repo, reinstall"
+  },
+  "app_limitations": {
+    "tags_not_clickable": "Cloudstream sets chip.isClickable=false on tags. No tag-click callback exists. WIP ITag API unused.",
+    "search_is_string_only": "search(query:String) takes plain string only. No tag/filter/callback API.",
+    "addActors_not_in_stubs": "Use this.actors property directly, not addActors() helper",
+    "no_cloudflare_bypass": "No WebView or JS execution in extension. Cloudflare-protected sites are unusable."
+  },
+  "tvtype_mapping": {
+    "NSFW": "Adult content. MUST use for porn sites or extension appears under Movies with no 18+ tag",
+    "Movie": "Standard movies",
+    "TvSeries": "TV shows with episodes",
+    "Anime": "Anime content",
+    "Live": "Live streams"
+  },
+  "search_encoding": {
+    "path_segment_dashes": "Most tube sites: /search/hot-asian-teen (dashes not + or %20)",
+    "query_param_plus": "Some sites: ?q=hot+asian+teen (+ works in query params)",
+    "query_param_percent": "WordPress: ?s=hot%20asian%20teen (%20 encoding)",
+    "rule": "ALWAYS test multi-word search before declaring it works"
+  },
+  "category_sources": {
+    "homepage_navigation": "Parse site's nav/menu for category links",
+    "tag_urls": "/search/{tag} becomes a mainPage entry",
+    "channel_urls": "/channels/{name} becomes a mainPage entry",
+    "star_urls": "/stars/{name} becomes a mainPage entry (same HTML as search usually)",
+    "pagination": "?page=N or /page/N/ - check site's pagination element"
+  },
+  "mp4_extraction": {
+    "direct_source_tag": "document.select(\"video source\") -> attr(\"src\") + attr(\"title\")",
+    "iframe_embed": "document.select(\"iframe[src]\") -> loadExtractor()",
+    "url_prefix": "If src starts with //, prefix https:",
+    "quality_map": {"1080p":"P1080","720p":"P720","480p":"P480","360p":"P360"},
+    "type_mp4": "ExtractorLinkType.VIDEO",
+    "type_m3u8": "ExtractorLinkType.M3U8"
+  }
+}
