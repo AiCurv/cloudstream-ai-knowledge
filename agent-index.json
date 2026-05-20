@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "cloudstream-ai-knowledge",
-    "version": "2.0",
+    "version": "2.1",
     "description": "Machine-readable quick reference for AI agents building Cloudstream extensions",
     "updated": "2026-05-20",
     "repo": "https://github.com/AiCurv/cloudstream-ai-knowledge"
@@ -13,6 +13,7 @@
     "cloudstream_stubs": "com.lagradost:cloudstream3:pre-release",
     "jvm_target": "1.8",
     "java_compat": "1.8",
+    "min_gradle_version": "8.9",
     "nicehttp": "com.github.Blatzar:NiceHttp:0.4.11",
     "jsoup": "org.jsoup:jsoup:1.18.3",
     "jackson": "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1",
@@ -27,17 +28,22 @@
     "github_actions_403": "Add permissions:contents:write to workflow YAML",
     "search_multi_word_empty": "Replace spaces with dashes in path-segment search URLs. URLEncoder + signs return 0 results on many sites",
     "tvtypes_movies_not_nsfw": "Set tvTypes=listOf(\"NSFW\") in build.gradle.kts cloudstream block + supportedTypes=setOf(TvType.NSFW) in Provider",
-    "unsupported_escape_sequence": "Use Regex(\"\\\\s+\") not \"\\s+\".toRegex() in regular Kotlin strings",
-    "unresolved_addActors": "Use this.actors=listOf(...) not addActors() which doesn't exist in pre-release stubs",
+    "unsupported_escape_sequence": "Use Regex(\"\\\\\\\\s+\") not \"\\\\s+\".toRegex() in regular Kotlin strings",
+    "unresolved_addActors": "Use this.actors property directly inside newMovieLoadResponse block, not addActors()",
     "cloudflare_blocked": "Switch to non-Cloudflare site. No reliable bypass from extension code",
     "bracket_selectors_corrupted": "Write files via Python not bash heredoc. [href gets eaten by shell",
     "empty_mainpage": "Set hasMainPage=true + implement getMainPage() + use correct CSS selectors for the site",
-    "cached_old_extension": "User must uninstall old extension, remove repo, re-add repo, reinstall"
+    "cached_old_extension": "User must uninstall old extension, remove repo, re-add repo, reinstall",
+    "searchresponse_interface": "Use newMovieSearchResponse(...) DSL, never instantiate SearchResponse directly",
+    "movie_load_response_deprecated": "Use newMovieLoadResponse(name, url, type, dataUrl) { block } DSL, not MovieLoadResponse constructor",
+    "jackson_readvalue_string": "Use jacksonMapper.readValue(json, object: TypeReference<Map<String,Any>>(){}) not readValue<T>(String)",
+    "gradlew_missing": "Commit gradle wrapper files (gradlew, gradlew.bat, gradle/wrapper/*) - run gradle wrapper --gradle-version=8.9",
+    "gradle_89_required": "Cloudstream gradle plugin requires Gradle 8.9 minimum, not 8.7. Use gradle wrapper --gradle-version=8.9"
   },
   "app_limitations": {
     "tags_not_clickable": "Cloudstream sets chip.isClickable=false on tags. No tag-click callback exists. WIP ITag API unused.",
     "search_is_string_only": "search(query:String) takes plain string only. No tag/filter/callback API.",
-    "addActors_not_in_stubs": "Use this.actors property directly, not addActors() helper",
+    "addActors_not_in_stubs": "Use this.actors inside newMovieLoadResponse block, not addActors()",
     "no_cloudflare_bypass": "No WebView or JS execution in extension. Cloudflare-protected sites are unusable."
   },
   "tvtype_mapping": {
@@ -67,5 +73,21 @@
     "quality_map": {"1080p":"P1080","720p":"P720","480p":"P480","360p":"P360"},
     "type_mp4": "ExtractorLinkType.VIDEO",
     "type_m3u8": "ExtractorLinkType.M3U8"
+  },
+  "site_patterns": {
+    "xhamster": {
+      "type": "tube (HLS streaming)",
+      "cloudflare": "NO (accessible with standard User-Agent)",
+      "search_url": "https://xhamster.com/search/{query}",
+      "search_encoding": "PLUS (+), e.g. /search/japanese+teen",
+      "data_extraction": "JSON embedded in window.initials script tag (parse via Regex + Jackson TypeReference)",
+      "main_page_video_extraction": "initials.layoutPage.videoListProps.videoThumbProps[]",
+      "search_video_extraction": "Same as mainPage - also falls back to layoutPage.videoListProps.videoThumbProps",
+      "video_page_extraction": "initials.videoModelComponent.hls.sources (HLS m3u8 URL)",
+      "video_page_poster": "initials.videoModelComponent.hls.poster",
+      "quality": "Extracted from HLS sources map keys",
+      "pagination": "?page=N appended to mainPage URLs",
+      "tested": "2026-05-20"
+    }
   }
 }

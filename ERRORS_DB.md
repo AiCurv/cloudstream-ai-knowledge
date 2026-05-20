@@ -32,30 +32,19 @@
 
 ### ERROR #2 - Kotlin version mismatch (2.1.0 vs 2.3.0)
 - **symptom**: `Some Kotlin metadata version mismatch. Expected 2.3, got 2.1`
-- **cause**: Kotlin gradle plugin version must be 2.3.0 because pre-release stubs are compiled with Kotlin 2.3.0 metadata
-- **fix**: `classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0")`
-- **attempts_failed**: Using 2.1.0, 2.2.0 - all fail with metadata mismatch
-- **discovered_in**: AiCurv/aicurv build
+- **cause**: Kotlin gradle plugin version must be 2.3.0 because pre-release stubs were compiled with 2.3.0
+- **fix**: Use `classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0")` explicitly
+- **attempts_failed**: Using default Kotlin version from Android Gradle Plugin (too new, 2.1.x)
+- **discovered_in**: AiCurv/aicurv XXDBXProvider
 
 ---
 
-### ERROR #3 - JVM target 17 instead of 1.8
-- **symptom**: Build fails with dex/class compatibility errors
-- **cause**: Cloudstream targets JVM 1.8. Android minSdk 21 requires JVM 1.8 bytecode
-- **fix**:
-  ```kotlin
-  tasks.withType<KotlinJvmCompile> {
-      compilerOptions {
-          jvmTarget.set(JvmTarget.JVM_1_8)  // NOT JVM_17
-      }
-  }
-  compileOptions {
-      sourceCompatibility = JavaVersion.VERSION_1_8
-      targetCompatibility = JavaVersion.VERSION_1_8
-  }
-  ```
-- **attempts_failed**: JVM_17, JVM_11 - all fail
-- **discovered_in**: AiCurv/aicurv build
+### ERROR #3 - JVM target 1.8 vs 17
+- **symptom**: `Unsupported class file major version 17` or similar class version errors
+- **cause**: JVM target must be 1.8 not 17. Cloudstream extensions run on Android JVM 1.8 compatibility
+- **fix**: In `tasks.withType<KotlinJvmCompile>`, set `jvmTarget.set(JvmTarget.JVM_1_8)`
+- **attempts_failed**: Using JVM_17 or JVM_21
+- **discovered_in**: AiCurv/aicurv CI build
 
 ---
 
@@ -121,23 +110,22 @@
 ---
 
 ### ERROR #7 - Unsupported escape sequence in Kotlin string
-- **symptom**: `e: Unsupported escape sequence` on line with regex `\s+`
-- **cause**: Kotlin string literals don't support `\s` as an escape. `\s` is a regex metacharacter, not a Kotlin string escape. In regular strings, use `\\s+`. In raw strings, `\s+` works.
+- **symptom**: `e: Unsupported escape sequence` on line with regex `\\s+`
+- **cause**: Kotlin string literals don't support `\\s` as an escape. `\\s` is a regex metacharacter, not a Kotlin string escape. In regular strings, use `\\\\s+`. In raw strings, `\\s+` works.
 - **fix**:
   ```kotlin
   // WRONG:
-  .replace("\s+".toRegex(), "-")  // Compile error
+  .replace("\\s+".toRegex(), "-")  // Compile error
 
   // CORRECT option 1:
-  .replace(Regex("\\s+"), "-")
-
+  .replace(Regex("\\\\s+"), "-")
   // CORRECT option 2:
-  .replace("\\s+".toRegex(), "-")
+  .replace("\\\\s+".toRegex(), "-")
 
   // CORRECT option 3 (simple, catches 99% of cases):
   .replace(" ", "-")
   ```
-- **attempts_failed**: `"\s+".toRegex()` → compile error
+- **attempts_failed**: `"\\s+".toRegex()` → compile error
 - **discovered_in**: AiCurv/aicurv XXDBXProvider V2.5 build
 
 ---
@@ -235,3 +223,71 @@
   4. Install fresh extension
   No code fix possible - this is app behavior.
 - **discovered_in**: AiCurv/aicurv HDPornFull → XXDBX migration
+
+---
+
+### ERROR #13 - SearchResponse is interface, cannot instantiate directly
+- **symptom**: `e: Interface 'interface SearchResponse : Any' does not have constructors` when trying `SearchResponse(...)`
+- **cause**: `SearchResponse` is an interface, not a data class. Must use factory method `newMovieSearchResponse(...)` instead.
+- **fix**: Use `newMovieSearchResponse(name, url, type) { posterUrl = ... }` - never instantiate SearchResponse directly
+- **attempts_failed**: Direct instantiation like `MovieSearchResponse(...)`
+- **discovered_in**: AiCurv/cloudstream-extensions XHamsterProvider build
+
+---
+
+### ERROR #14 - MovieLoadResponse deprecated constructor requires apiName
+- **symptom**: `e: No value passed for parameter 'apiName'` when using `MovieLoadResponse(...)` constructor directly
+- **cause**: The old `MovieLoadResponse(name, url, apiName, type, dataUrl, ...)` constructor is deprecated. Use `newMovieLoadResponse()` factory method instead.
+- **fix**: Use `newMovieLoadResponse(name, url, type, dataUrl) { this.posterUrl = ...; this.plot = ... }` DSL-style builder
+- **attempts_failed**: Using direct constructor with all positional args
+- **discovered_in**: AiCurv/cloudstream-extensions XHamsterProvider build
+
+---
+
+### ERROR #15 - Jackson readValue String parameter not available
+- **symptom**: `e: Argument type mismatch: actual type is 'String', but 'Reader!' was expected` when using `jacksonMapper.readValue(jsonString)`
+- **cause**: Jackson's `readValue(String)` overload is not available in the Kotlin jackson-module-kotlin setup. Must use `TypeReference` or `JavaType`.
+- **fix**:
+  ```kotlin
+  // WRONG:
+  jacksonMapper.readValue<Map<String, Any>>(jsonStr)
+
+  // CORRECT:
+  jacksonMapper.readValue(jsonStr, object : TypeReference<Map<String, Any>>() {})
+  ```
+- **attempts_failed**: Using plain `readValue<T>(String)` directly
+- **discovered_in**: AiCurv/cloudstream-extensions XHamsterProvider build
+
+---
+
+### ERROR #16 - Gradle wrapper not present - CI fails with "gradlew not found"
+- **symptom**: `chmod: cannot access 'gradlew': No such file or directory` in CI
+- **cause**: Gradle wrapper files (`gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.properties`, `gradle/wrapper/gradle-wrapper.jar`) were not committed to git
+- **fix**: Run `gradle wrapper --gradle-version=8.9` locally and commit all generated wrapper files. Note: Android Gradle Plugin 8.7.3 requires Gradle 8.9 minimum.
+- **attempts_failed**: Trying to download gradle in CI, using wrong gradle version
+- **discovered_in**: AiCurv/cloudstream-extensions CI build
+
+---
+
+### ERROR #17 - newMovieSearchResponse named parameter 'posterUrl' not found
+- **symptom**: `e: No parameter with name 'posterUrl' found` when using `newMovieSearchResponse(..., posterUrl = ...)`
+- **cause**: The DSL block style `newMovieSearchResponse(...) { posterUrl = ... }` uses different parameter names inside the block vs constructor. Inside the block, use `posterUrl` as a property assignment, not as a named constructor arg.
+- **fix**:
+  ```kotlin
+  // CORRECT - DSL block style:
+  newMovieSearchResponse(name, url, type) {
+      this.posterUrl = posterUrlHere
+      this.year = yearHere
+  }
+  ```
+- **attempts_failed**: `newMovieSearchResponse(name, url, type, posterUrl = ...)` positional args
+- **discovered_in**: AiCurv/cloudstream-extensions XHamsterProvider build
+
+---
+
+### ERROR #18 - Cloudstream gradle plugin requires Gradle 8.9+
+- **symptom**: `Minimum supported Gradle version is 8.9. Current version is 8.7`
+- **cause**: Android Gradle Plugin 8.7.3 and Cloudstream gradle plugin require Gradle 8.9 minimum
+- **fix**: Use `gradle wrapper --gradle-version=8.9` to generate wrapper with 8.9
+- **attempts_failed**: Using Gradle 8.7 which was previously default
+- **discovered_in**: AiCurv/cloudstream-extensions XHamsterProvider build
