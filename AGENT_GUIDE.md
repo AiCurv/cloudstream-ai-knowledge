@@ -60,6 +60,7 @@ When you (an AI agent) encounter a new error or pattern:
 
 | Priority | File | When to Read |
 |----------|------|-------------|
+| 0 | AI_AGENT_PROMPT.md | ACTIVATION — read this first if you are an AI agent being activated |
 | 1 | agent-index.json | ALWAYS first - fast lookup |
 | 2 | ERRORS_DB.md | On any build/runtime error |
 | 3 | SITE_PATTERNS.md | When analyzing a new site |
@@ -77,3 +78,5 @@ When you (an AI agent) encounter a new error or pattern:
 8. Trying to bypass Cloudflare → pick a different site
 9. Not testing multi-word search → ALWAYS test
 10. Not incrementing version number → Cloudstream won't update
+11. Not updating knowledge base after finding new errors → knowledge base becomes stale
+12. Not testing M3U8 extraction before declaring loadLinks works → always verify video plays
